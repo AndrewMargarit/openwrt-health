@@ -11,6 +11,8 @@ splashcheck=0
 urlstatus=0
 icmpip=0
 icmphost=0
+timenamelookup=0
+timeconnect=0
 
 icmp_check () {
 	ping -c 2 $1 >/dev/null 2>&1
@@ -67,12 +69,26 @@ mac_check () {
 	mac=`cat /etc/mac`
 }
 
+time_name_lookup () {
+	namelookup=`curl -s -w %{time_namelookup} -o /dev/null $api_url`
+	if [ $? -eq 0 ] ; then
+		timenamelookup=1
+	fi
+}
+time_connect () {
+	connecttime=`curl -s -w %{time_connect} -o /dev/null $api_url`
+	if [ $? -eq 0 ] ; then
+		timeconnect=1
+	fi
+}
 url_status_check $url
 splash_check $splashcheck
 sync_id
 mac_check
 mtu_check
 serial_check
+time_name_lookup
+time_connect
 
 json_init
 json_add_object "data"
@@ -82,6 +98,9 @@ json_add_boolean "ct" $urlstatus
 json_add_boolean "splash" $splashcheck
 json_add_boolean "mtu_check" $mtucheck
 json_add_string "sync_id" "$syncstatus"
+json_add_string "time_name_lookup" "$namelookup"
+json_add_string "time_connect" "$connecttime"
+
 json_close_object
 
 health_check=`json_dump`
